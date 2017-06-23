@@ -1,0 +1,22 @@
+---
+# whoami.yml
+# Author: Robert Owens (xxxxxx@xxxxxx)
+# Description: Validate Privs
+
+- name: status
+  hosts: hostlist
+  become: yes
+  become_method: su
+  become_user: root
+  vars_files:
+    - ../vault.yaml
+  vars:
+    ansible_become_pass: "{{ root }}"
+
+  tasks:
+    - name: whoami
+      command: whoami
+      register: whoami_output
+    - debug: var=whoami_output.stdout
+    - debug: var=ansible_ssh_user
+    - debug: var=ansible_user_id

@@ -1,0 +1,101 @@
+---
+# wildfly_install.yml
+# Author: Robert Owens (xxxxxx@xxxxxx)
+# Playbook Old Script
+# --
+# Organic
+# x Call the script from playbook, instead of manually on host.
+# x download init script
+# x install/enable init script
+# o playbook the useradd
+# o playbook the file downloads
+# o playbook the symlinks
+# o playbook the ownership and perms
+# o playbook startup script/test
+
+- name: wildfly_install
+  hosts: new
+  become: yes
+  become_method: su
+  become_user: root
+  vars_files:
+    - ../vault.yaml
+  vars:
+    ansible_become_pass: "{{ root }}"
+#    password: $6$Jz/FWpVp$4kbvjPYFb6wtIhfgYZRYWTGaQ3ZZG2fPXiUfVrDjfPDKBXgClHuAF7iCvstkfJ2pecG0.khR/na8fqnPuJyr01
+
+  tasks:
+  - name: Unlink old Files
+    file:
+      path: /opt/java
+      state: absent
+    file:
+      path: /opt/wildfly
+      state: absent
+
+  - name: Groupadd
+    group:
+      gid: 2014
+      name: jboss
+      state: present
+
+  - name: Useradd
+    user:
+      name: jboss
+      comment: "xxxxxx@xxxxxx"
+      group: jboss
+      uid: 2014
+      shell: /bin/bash
+      state: present
+
+  - name: Get Install Script
+    get_url:
+      url: https://hostname.xxxxxx.xxx/pub/app/java/wildfly/wildflyinstall.sh
+      dest: /opt/wildflyinstall.sh
+      force: yes
+      mode: 0755
+      validate_certs: no
+    ignore_errors: no
+
+  - name: Install Wildfly
+    command: /opt/wildflyinstall.sh
+
+  - name: Validate Symlinks
+    file:
+      src: /opt/jdk1.8.0_131
+      dest: /opt/java
+      owner: jboss
+      group: jboss
+      state: link
+    file:
+      src: /opt/wildfly-10.1.0.Final
+      dest: /opt/wildfly
+      owner: jboss
+      group: jboss
+      state: link
+    ignore_errors: no
+
+  - name: Get Init Script
+    get_url:
+      url: https://hostname.xxxxxx.xxx/pub/app/java/wildfly/wildfly
+      dest: /etc/init.d/wildfly
+      force: yes
+      mode: 0755
+      validate_certs: no
+    ignore_errors: no
+
+  - name: enable service
+    service:
+      name: wildfly
+      enabled: yes
+ 
+  - name: Remove Files
+    file:
+      path: /opt/wildflyinstall.sh
+      state: absent
+    file:
+      path: /opt/jdk-8u131-linux-x64.tar.gz
+      state: absent
+    file:
+      path: /opt/wildfly-10.1.0.Final.tar.gz
+      state: absent
